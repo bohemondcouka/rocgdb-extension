@@ -1,0 +1,492 @@
+{
+  "name": "rocgdb-extension",
+  "displayName": "rocgdb-extension",
+  "description": "Extension for rocgdb gpu support",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.63.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onDebug",
+    "onCommand:rocgdb.open",
+    "onCommand:rocgdb-view-info.reveal",
+    "onView:rocgdb-view-info-agents"
+  ],
+  "main": "./out/extension.js",
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/glob": "^7.1.4",
+    "@types/mocha": "^9.0.0",
+    "@types/node": "14.x",
+    "@types/vscode": "^1.63.0",
+    "@typescript-eslint/eslint-plugin": "^5.1.0",
+    "@typescript-eslint/parser": "^5.1.0",
+    "@vscode/test-electron": "^1.6.2",
+    "eslint": "^8.1.0",
+    "glob": "^7.1.7",
+    "mocha": "^9.1.3",
+    "typescript": "^4.4.4"
+  },
+  "dependencies": {
+    "cdt-gdb-adapter": "^0.0.15"
+  },
+  "contributes": {
+    "commands": [
+      {
+        "category": "GDB",
+        "title": "Open ROCGDB",
+        "command": "rocgdb.open"
+      },
+      {
+				"command": "rocgdb-view-info.reveal",
+				"title": "ROCGDB: Reveal"
+			}
+    ],
+    "breakpoints": [
+      {
+        "language": "c"
+      },
+      {
+        "language": "cpp"
+      }
+    ],
+    "debuggers": [
+      {
+        "type": "rocgdb",
+        "label": "ROCGDB",
+        "program": "./node_modules/cdt-gdb-adapter/dist/debugAdapter.js",
+        "runtime": "node",
+        "configurationAttributes": {
+          "launch": {
+            "required": [
+              "program"
+            ],
+            "properties": {
+              "gdb": {
+                "type": "string",
+                "description": "Path to gdb",
+                "default": "rocgdb"
+              },
+              "program": {
+                "type": "string",
+                "description": "Path to the program to be launched",
+                "default": "${workspaceFolder}/${command:askProgramPath}"
+              },
+              "arguments": {
+                "type": "string",
+                "description": "Arguments for the program"
+              },
+              "verbose": {
+                "type": "boolean",
+                "description": "Produce verbose log output",
+                "default": "false"
+              },
+              "logFile": {
+                "type": "string",
+                "description": "Absolute path to the file to log interaction with gdb"
+              },
+              "openGdbConsole": {
+                "type": "boolean",
+                "description": "(UNIX-only) Open a GDB console in your IDE while debugging"
+              },
+              "initCommands": {
+                "type": "array",
+                "description": "List of GDB commands sent before starting inferior.",
+                "items": {
+                  "type": "string"
+                },
+                "default": []
+              }
+            }
+          },
+          "attach": {
+            "required": [
+              "program",
+              "processId"
+            ],
+            "properties": {
+              "gdb": {
+                "type": "string",
+                "description": "Path to rocgdb",
+                "default": "rocgdb"
+              },
+              "program": {
+                "type": "string",
+                "description": "Path to the program to be debugged",
+                "default": "${workspaceFolder}/${command:askProgramPath}"
+              },
+              "processId": {
+                "type": "string",
+                "description": "Process ID to attach to",
+                "default": "${command:askProcessId}"
+              },
+              "verbose": {
+                "type": "boolean",
+                "description": "Produce verbose log output",
+                "default": "false"
+              },
+              "logFile": {
+                "type": "string",
+                "description": "Absolute path to the file to log interaction with rocgdb"
+              },
+              "openGdbConsole": {
+                "type": "boolean",
+                "description": "(UNIX-only) Open a ROCGDB console in your IDE while debugging"
+              },
+              "initCommands": {
+                "type": "array",
+                "description": "List of ROCGDB commands sent before attaching to inferior.",
+                "items": {
+                  "type": "string"
+                },
+                "default": []
+              }
+            }
+          }
+        },
+        "variables": {
+          "askProgramPath": "rocgdb.debug.askProgramPath",
+          "askProcessId": "rocgdb.debug.askProcessId"
+        },
+        "initialConfigurations": [
+          {
+            "type": "rocgdb",
+            "request": "launch",
+            "name": "rocgdb launch",
+            "program": "${workspaceFolder}/${command:askProgramPath}"
+          }
+        ],
+        "configurationSnippets": [
+          {
+            "label": "ROCGDB Local debugging",
+            "description": "A new configuration for local debugging using ROCGDB.",
+            "body": {
+              "type": "rocgdb",
+              "request": "launch",
+              "name": "Name here",
+              "program": "^\"\\${workspaceFolder}/\\${command:askProgramPath}\""
+            }
+          }
+        ]
+      },
+      {
+        "type": "rocgdbtarget",
+        "label": "ROCGDB Target",
+        "program": "./node_modules/cdt-gdb-adapter/dist/debugTargetAdapter.js",
+        "runtime": "node",
+        "configurationAttributes": {
+          "launch": {
+            "required": [
+              "program"
+            ],
+            "properties": {
+              "gdb": {
+                "type": "string",
+                "description": "Path to rocgdb",
+                "default": "rocgdb"
+              },
+              "program": {
+                "type": "string",
+                "description": "Path to the program to be launched",
+                "default": "${workspaceFolder}/${command:askProgramPath}"
+              },
+              "verbose": {
+                "type": "boolean",
+                "description": "Produce verbose log output",
+                "default": "false"
+              },
+              "logFile": {
+                "type": "string",
+                "description": "Absolute path to the file to log interaction with gdb"
+              },
+              "openGdbConsole": {
+                "type": "boolean",
+                "description": "(UNIX-only) Open a ROCGDB console in your IDE while debugging"
+              },
+              "initCommands": {
+                "type": "array",
+                "description": "List of ROCGDB commands sent after attaching to target before loading image on target.",
+                "items": {
+                  "type": "string"
+                },
+                "default": []
+              },
+              "preRunCommands": {
+                "type": "array",
+                "description": "List of ROCGDB commands sent after loading image on target before resuming target.",
+                "items": {
+                  "type": "string"
+                },
+                "default": []
+              },
+              "imageAndSymbols": {
+                "type": "object",
+                "default": {},
+                "properties": {
+                  "symbolFileName": {
+                    "type": "string",
+                    "description": "If specified, a symbol file to load at the given (optional) offset",
+                    "default": ""
+                  },
+                  "symbolOffset": {
+                    "type": "string",
+                    "description": "If symbolFileName is specified, the offset used to load",
+                    "default": ""
+                  },
+                  "imageFileName": {
+                    "type": "string",
+                    "description": "If specified, an image file to load at the given (optional) offset",
+                    "default": ""
+                  },
+                  "imageOffset": {
+                    "type": "string",
+                    "description": "If imageFileName is specified, the offset used to load",
+                    "default": ""
+                  }
+                }
+              },
+              "target": {
+                "type": "object",
+                "default": {},
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "description": "The kind of target debugging to do. This is passed to -target-select (defaults to remote)",
+                    "default": "remote"
+                  },
+                  "parameters": {
+                    "type": "array",
+                    "description": "Target parameters for the type of target. Normally something like localhost:12345. (defaults to `${host}:${port}`)",
+                    "items": {
+                      "type": "string"
+                    },
+                    "default": []
+                  },
+                  "host": {
+                    "type": "string",
+                    "description": "Target host to connect to (defaults to 'localhost', ignored if parameters is set)",
+                    "default": "localhost"
+                  },
+                  "port": {
+                    "type": "string",
+                    "description": "Target port to connect to (defaults to value captured by serverPortRegExp, ignored if parameters is set)",
+                    "default": "2331"
+                  },
+                  "cwd": {
+                    "type": "string",
+                    "description": "Specifies the working directory of server (defaults to the working directory of gdb)",
+                    "default": ""
+                  },
+                  "server": {
+                    "type": "string",
+                    "description": "The executable for the target server to launch (e.g. gdbserver or JLinkGDBServerCLExe) (defaults to gdbserver)",
+                    "default": "gdbserver"
+                  },
+                  "serverParameters": {
+                    "type": "array",
+                    "description": "Command line arguments passed to server (defaults to --once :0 ${args.program}).",
+                    "items": {
+                      "type": "string"
+                    },
+                    "default": []
+                  },
+                  "serverPortRegExp": {
+                    "type": "string",
+                    "description": "Regular expression to extract port from by examinging stdout/err of server. Once server is launched, port will be set to this if port is not set. Defaults to matching a string like 'Listening on port 41551' which is what gdbserver provides. Ignored if port or parameters is set",
+                    "default": ""
+                  },
+                  "serverStartupDelay": {
+                    "type": "number",
+                    "description": "Delay after startup before continuing launch, in milliseconds. If serverPortRegExp is provided, it is the delay after that regexp is seen.",
+                    "default": "0"
+                  }
+                }
+              }
+            }
+          },
+          "attach": {
+            "required": [
+              "program"
+            ],
+            "properties": {
+              "gdb": {
+                "type": "string",
+                "description": "Path to gdb",
+                "default": "rocgdb"
+              },
+              "program": {
+                "type": "string",
+                "description": "Path to the program to be debugged",
+                "default": "${workspaceFolder}/${command:askProgramPath}"
+              },
+              "verbose": {
+                "type": "boolean",
+                "description": "Produce verbose log output",
+                "default": "false"
+              },
+              "logFile": {
+                "type": "string",
+                "description": "Absolute path to the file to log interaction with gdb"
+              },
+              "openGdbConsole": {
+                "type": "boolean",
+                "description": "(UNIX-only) Open a GDB console in your IDE while debugging"
+              },
+              "initCommands": {
+                "type": "array",
+                "description": "List of GDB commands sent after attaching to target before loading image on target.",
+                "items": {
+                  "type": "string"
+                },
+                "default": []
+              },
+              "preRunCommands": {
+                "type": "array",
+                "description": "List of GDB commands sent after loading image on target before resuming target.",
+                "items": {
+                  "type": "string"
+                },
+                "default": []
+              },
+              "imageAndSymbols": {
+                "type": "object",
+                "default": {},
+                "properties": {
+                  "symbolFileName": {
+                    "type": "string",
+                    "description": "If specified, a symbol file to load at the given (optional) offset",
+                    "default": ""
+                  },
+                  "symbolOffset": {
+                    "type": "string",
+                    "description": "If symbolFileName is specified, the offset used to load",
+                    "default": ""
+                  },
+                  "imageFileName": {
+                    "type": "string",
+                    "description": "If specified, an image file to load at the given (optional) offset",
+                    "default": ""
+                  },
+                  "imageOffset": {
+                    "type": "string",
+                    "description": "If imageFileName is specified, the offset used to load",
+                    "default": ""
+                  }
+                }
+              },
+              "target": {
+                "type": "object",
+                "default": {},
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "description": "The kind of target debugging to do. This is passed to -target-select (defaults to remote)",
+                    "default": "remote"
+                  },
+                  "parameters": {
+                    "type": "array",
+                    "description": "Target parameters for the type of target. Normally something like localhost:12345. (defaults to `${host}:${port}`)",
+                    "items": {
+                      "type": "string"
+                    },
+                    "default": []
+                  },
+                  "host": {
+                    "type": "string",
+                    "description": "Target host to connect to (defaults to 'localhost', ignored if parameters is set)",
+                    "default": "localhost"
+                  },
+                  "port": {
+                    "type": "string",
+                    "description": "Target port to connect to (defaults to value captured by serverPortRegExp, ignored if parameters is set)",
+                    "default": "2331"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "variables": {
+          "askProgramPath": "rocgdb.debug.askProgramPath"
+        },
+        "initialConfigurations": [
+          {
+            "type": "rocgdbtarget",
+            "request": "attach",
+            "name": "rocgdb remote attach",
+            "program": "${workspaceFolder}/${command:askProgramPath}"
+          }
+        ],
+        "configurationSnippets": [
+          {
+            "label": "ROCGDB CDT Remote debugging - automatic launching of gdbserver",
+            "description": "A new configuration for remote debugging using GDB with launching of gdbserver.",
+            "body": {
+              "type": "rocgdbtarget",
+              "request": "launch",
+              "name": "Name here",
+              "program": "^\"\\${workspaceFolder}/\\${command:askProgramPath}\""
+            }
+          },
+          {
+            "label": "ROCGDB Remote debugging",
+            "description": "A new configuration for remote debugging using GDB.",
+            "body": {
+              "type": "rocgdbtarget",
+              "request": "attach",
+              "name": "Name here",
+              "program": "^\"\\${workspaceFolder}/\\${command:askProgramPath}\""
+            }
+          }
+        ]
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "rocgdb-view",
+          "title": "rocgdb view",
+          "icon": "media/dep.svg"
+        }
+      ]
+    },
+    "views": {
+      "debug": [
+        {
+          "id": "rocgdb-view-info-agents",
+          "name": "Agents",
+          "icon": "",
+          "contextualTitle": "ROCGDB Agents"
+        },
+        {
+          "id": "rocgdb-view-info-queues",
+          "name": "Queues",
+          "icon": "",
+          "contextualTitle": "ROCGDB Queues"
+        },
+        {
+          "id": "rocgdb-view-info-dispatches",
+          "name": "Dispatches",
+          "icon": "",
+          "contextualTitle": "ROCGDB Dispatches"
+        },
+        {
+          "id": "rocgdb-view-info-lanes",
+          "name": "Lanes",
+          "icon": "",
+          "contextualTitle": "ROCGDB Lanes"
+        }
+      ]
+    }
+  }
+}
