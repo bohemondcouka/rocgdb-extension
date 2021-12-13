@@ -23,7 +23,8 @@
 			"request": "launch",
 			"args": [
 				"--extensionDevelopmentPath=${workspaceFolder}",
-				"--extensionTestsPath=${workspaceFolder}/out/test/suite/index"
+				"--extensionTestsPath=${workspaceFolder}/out/test/suite/index",
+				"/home/ubuntu/rocm-afar001-264/hip/samples/0_Intro/bit_extract"
 			],
 			"outFiles": [
 				"${workspaceFolder}/out/test/**/*.js"

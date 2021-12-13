@@ -1,7 +1,13 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
+import { threadId } from 'worker_threads';
+import { EventStoppedListenerFactory } from './eventStoppedListener';
 import { AgentView } from './views/agent';
+import { DispatcheView } from './views/dispatche';
+import { LaneView } from './views/lane';
+import { QueueView } from './views/queue';
+import { ThreadView } from './views/thread';
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -37,7 +43,19 @@ export function activate(context: vscode.ExtensionContext) {
 
 	context.subscriptions.push(disposable);
 
-	new AgentView(context);
+	const agent = new AgentView(context);
+	const queue =new QueueView(context);
+	const dispatche = new DispatcheView(context);
+	const lane = new LaneView(context);
+	const thread = new ThreadView(context);
+	const stoppedListener = new EventStoppedListenerFactory([
+		agent.agents,
+		queue.queues,
+		dispatche.dispatches,
+		lane.lanes,
+		thread.threads
+	]);
+	vscode.debug.registerDebugAdapterTrackerFactory('rocgdb', stoppedListener);
 }
 
 // this method is called when your extension is deactivated

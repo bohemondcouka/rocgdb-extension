@@ -2,7 +2,7 @@
   "name": "rocgdb-extension",
   "displayName": "rocgdb-extension",
   "description": "Extension for rocgdb gpu support",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "engines": {
     "vscode": "^1.63.0"
   },
@@ -38,7 +38,7 @@
     "typescript": "^4.4.4"
   },
   "dependencies": {
-    "cdt-gdb-adapter": "^0.0.15"
+    "cdt-gdb-adapter": "file:../cdt-gdb-adapter/cdt-gdb-adapter-0.0.19-next.tgz"
   },
   "contributes": {
     "commands": [
@@ -48,9 +48,9 @@
         "command": "rocgdb.open"
       },
       {
-				"command": "rocgdb-view-info.reveal",
-				"title": "ROCGDB: Reveal"
-			}
+        "command": "rocgdb-view-info.reveal",
+        "title": "ROCGDB: Reveal"
+      }
     ],
     "breakpoints": [
       {
@@ -485,6 +485,12 @@
           "name": "Lanes",
           "icon": "",
           "contextualTitle": "ROCGDB Lanes"
+        },
+        {
+          "id": "rocgdb-view-info-threads",
+          "name": "Threads",
+          "icon": "",
+          "contextualTitle": "ROCGDB Threads"
         }
       ]
     }

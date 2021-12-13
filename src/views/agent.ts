@@ -1,8 +1,27 @@
-import * as vscode from 'vscode';
+
+import { ExtensionContext, window, TreeDataProvider, Event, EventEmitter, DebugSession, 
+	TreeItem, TreeItemCollapsibleState } from 'vscode';
+import { Observer } from '../eventStoppedListener';
+
+export interface AgentContents {
+    id: string;
+    'target-id': string;
+    name: string;
+    cores: string,
+    threads: string;
+    // eslint-disable-next-line @typescript-eslint/naming-convention
+    'location_id' : string;
+}
 
 export class AgentView {
-	constructor(context: vscode.ExtensionContext) {
-		const view = vscode.window.createTreeView('rocgdb-view-info-agents', { treeDataProvider: new AgentViewProvider(), showCollapseAll: true });
+	public agents: AgentViewProvider;
+	public context: ExtensionContext;
+
+	constructor(context: ExtensionContext) {
+		this.context = context;
+		this.agents = new AgentViewProvider();
+
+		const view = window.createTreeView('rocgdb-view-info-agents', { treeDataProvider: this.agents, showCollapseAll: true });
 		context.subscriptions.push(view);
 		/*vscode.commands.registerCommand('rocgdb-view-info.reveal', async () => {
 			const key = await vscode.window.showInputBox({ placeHolder: 'Type the label of the item to reveal' });
@@ -10,85 +29,86 @@ export class AgentView {
 				await view.reveal({ key }, { focus: true, select: false, expand: true });
 			}
 		});*/
-		vscode.debug.onDidStartDebugSession(session => {
-			if(session.type != 'rocgdb'){
-				return;
+		
+	}
+}
+
+class AgentViewProvider implements TreeDataProvider<AgentItem | AgentInfo>, Observer {
+	public agentsList : AgentItem[];
+	public onDidChangeTreeData: Event<AgentItem | undefined>;
+	private emitterDidChangeTreeData: EventEmitter<AgentItem |undefined>;
+
+	constructor() {
+		this.agentsList = [];
+		this.emitterDidChangeTreeData = new EventEmitter<AgentItem |undefined>();
+		this.onDidChangeTreeData = this.emitterDidChangeTreeData.event;
+
+	}
+
+	getTreeItem(element: AgentItem | AgentInfo): Thenable<AgentItem | AgentInfo> {
+		return Promise.resolve(element);
+	}
+
+	getChildren(element?: AgentItem): AgentItem[]  | AgentInfo[] {
+		if(element === undefined) return this.agentsList;
+		return element.getInfo();
+	}
+
+	async getData(session: DebugSession) {
+		console.debug('Get Agent Data');
+		try {
+			
+			const result = await session.customRequest('cdt-gdb-adapter/Agents') as AgentContents[];
+			if(result) {
+				this.agentsList = result.map((data) => new AgentItem(data));
+				console.dir(this.agentsList);
+				this.emitterDidChangeTreeData.fire(undefined);
+				
 			}
-			console.log('Yeah !');
-		})
-		vscode.debug.registerDebugAdapterTrackerFactory('rocgdb', new AgentListenerFactory());
-	}
-}
-
-class AgentListenerFactory implements vscode.DebugAdapterTrackerFactory {
-	createDebugAdapterTracker(session: vscode.DebugSession): vscode.ProviderResult<vscode.DebugAdapterTracker> {
-		return new AgentListener(session);
-	}
-	
-}
-
-class AgentListener implements vscode.DebugAdapterTracker {
-
-	constructor(public readonly session: vscode.DebugSession){
+		} catch (err: any) {
+			console.error(err.message);
+		}
+		
 
 	}
-	/**
-	 * A session with the debug adapter is about to be started.
-	 */
-	onWillStartSession(): void {
-		console.log(`Debug session start.`);
-	}
-	/**
-	 * The debug adapter is about to receive a Debug Adapter Protocol message from the editor.
-	 */
-	onWillReceiveMessage(message: any): void {
-		console.log(`Debug session receive mesage : ${message}`);
-	}
-	/**
-	 * The debug adapter has sent a Debug Adapter Protocol message to the editor.
-	 */
-	onDidSendMessage(message: any): void {
-		console.log(`Debug session send message : ${message}`);
-	}
-	/**
-	 * The debug adapter session is about to be stopped.
-	 */
-	onWillStopSession(): void {
-		console.log(`Debug session stop.`);
-	}
-	/**
-	 * An error with the debug adapter has occurred.
-	 */
-	onError(error: Error): void {
-		console.log(`Debug session error : error (${error})`);
-	}
-	/**
-	 * The debug adapter has exited with the given exit code or signal.
-	 */
-	onExit(code: number | undefined, signal: string | undefined): void {
-		console.log(`Debug session end : code (${code}), signal (${signal})`);
-	}
-}
 
-class AgentViewProvider implements vscode.TreeDataProvider<AgentItem> {
-	onDidChangeTreeData?: vscode.Event<void | AgentItem | undefined> | undefined;
-	getTreeItem(element: AgentItem): vscode.TreeItem | Thenable<vscode.TreeItem> {
-		return new AgentItem('agent-test', vscode.TreeItemCollapsibleState.Collapsed);
-	}
-	getChildren(element?: AgentItem): vscode.ProviderResult<AgentItem[]> {
-		return [new AgentItem('agent-test', vscode.TreeItemCollapsibleState.Collapsed)];
-	}
 
 }
 
-class AgentItem extends vscode.TreeItem {
+class AgentItem extends TreeItem {
 	constructor(
-		public readonly label: string,
-		public readonly collapsibleState: vscode.TreeItemCollapsibleState
+		public agent: AgentContents
 	) {
-		super(label, collapsibleState);
+		super(agent['target-id'], TreeItemCollapsibleState.Collapsed);
 
-		this.tooltip = 'agents';
-		this.description = 'list of agent';
+		this.tooltip = agent.name;
+		this.description = agent.id;
+		this.contextValue = agent.threads;
+
+
+	}
+
+	getInfo(): AgentInfo[] {
+		let result = [
+			new AgentInfo('id', this.agent.id),
+			new AgentInfo('name', this.agent.name),
+			new AgentInfo('location-id', this.agent.location_id),
+			new AgentInfo('cores', this.agent.cores),
+			new AgentInfo('target-id', this.agent['target-id']),
+			new AgentInfo('Threads', this.agent.threads)
+		];
+		return result;
+	}
+
+
+}
+
+class AgentInfo extends TreeItem {
+	constructor(
+		public label: string,
+		public info: string
+	) {
+		super(label, TreeItemCollapsibleState.None);
+		this.description = info;
 	}
 }
