@@ -48,7 +48,7 @@
     "typescript": "^4.4.4"
   },
   "dependencies": {
-    "cdt-gdb-adapter": "file:../cdt-gdb-adapter/cdt-gdb-adapter-0.0.19-next.tgz"
+    "cdt-gdb-adapter": "https://github.com/bohemondcouka/cdt-gdb-adapter/releases/download/v0.1.0/cdt-gdb-adapter-0.1.0.tgz"
   },
   "contributes": {
     "commands": [
