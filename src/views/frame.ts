@@ -1,28 +1,7 @@
+import { FrameContents, VariableContents } from "cdt-gdb-adapter/dist/mi/info";
 import { TreeItem, TreeItemCollapsibleState } from "vscode";
 
-
 export type FrameTreeType = FrameInfo | FrameItem | VariableInfo | VariableItem;
-/**
- * Variable interface.
- */
- interface VariableContents {
-    name: string;
-    value: string;
-}
-
-/**
- * Frame interface.
- */
-export interface FrameContents {
-    addr: string;
-    arch: string;
-    args: VariableContents[];
-    file: string;
-    fullname: string;
-    func: string;
-    level: string;
-    line: string;
-}
 
 export class FrameItem extends TreeItem {
 	constructor(

@@ -1,3 +1,4 @@
+import { QueueGDBResponse } from 'cdt-gdb-adapter/dist/mi/info';
 import { ExtensionContext, window, TreeDataProvider, Event, EventEmitter, DebugSession, 
 	TreeItem, TreeItemCollapsibleState } from 'vscode';
 import { Observer } from '../eventStoppedListener';
@@ -57,10 +58,9 @@ class QueueViewProvider implements TreeDataProvider<QueueItem | QueueInfo>, Obse
 		console.debug('Get Queue Data');
 		try {
 			
-			const result = await session.customRequest('cdt-gdb-adapter/Queues') as QueueContents[];
+			const result = await session.customRequest('cdt-gdb-adapter/Info/Queues') as QueueGDBResponse;
 			if(result) {
-				this.queuesList = result.map((data) => new QueueItem(data));
-				console.dir(this.queuesList);
+				this.queuesList = result.queues.filter(data => data.id !== undefined).map((data) => new QueueItem(data, data.id === result['current-queue-id']));
 				this.emitterDidChangeTreeData.fire(undefined);
 				
 			}
@@ -71,14 +71,25 @@ class QueueViewProvider implements TreeDataProvider<QueueItem | QueueInfo>, Obse
 
 	}
 
+	async cleanData(session: DebugSession) {
+		this.queuesList = [];
+		this.emitterDidChangeTreeData.fire(undefined);
+	}
 
 }
 
 class QueueItem extends TreeItem {
 	constructor(
-		public queue: QueueContents
+		public queue: QueueContents,
+		highlight: boolean = false
 	) {
-		super(queue.id, TreeItemCollapsibleState.Collapsed);
+		super(
+			{
+				label: queue.id,
+				highlights: (highlight ? [[0, queue.id.length]] : [])
+			},
+			highlight ? TreeItemCollapsibleState.Expanded : TreeItemCollapsibleState.Collapsed
+		);
 
 		this.tooltip = queue.type;
 		this.description = queue.addr;

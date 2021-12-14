@@ -1,20 +1,8 @@
 /* eslint-disable @typescript-eslint/naming-convention */
+import { DispatchGDBResponse, DispatchContents } from 'cdt-gdb-adapter/dist/mi/info';
 import { ExtensionContext, window, TreeDataProvider, Event, EventEmitter, DebugSession, 
 	TreeItem, TreeItemCollapsibleState } from 'vscode';
 import { Observer } from '../eventStoppedListener';
-
-export interface DispatcheContents {
-    id: string;
-    'target-id': string;
-    grid: string;
-    workgroup: string;
-    fence: string;
-    'address-spaces': string;
-    'kernel-desc': string;
-    'kernel-args': string;
-    'completion': string;
-    'kernel-function': string;
-}
 
 export class DispatcheView {
 	public dispatches: DispatcheViewProvider;
@@ -61,10 +49,9 @@ class DispatcheViewProvider implements TreeDataProvider<DispatcheItem | Dispatch
 		console.debug('Get Dispatche Data');
 		try {
 			
-			const result = await session.customRequest('cdt-gdb-adapter/Dispatches') as DispatcheContents[];
+			const result = await session.customRequest('cdt-gdb-adapter/Info/Dispatches') as DispatchGDBResponse;
 			if(result) {
-				this.dispatchesList = result.map((data) => new DispatcheItem(data));
-				console.dir(this.dispatchesList);
+				this.dispatchesList = result.dispatches.filter(data => data.id !== undefined).map((data) => new DispatcheItem(data, data.id === result['current-dispatch-id']));
 				this.emitterDidChangeTreeData.fire(undefined);
 				
 			}
@@ -75,14 +62,25 @@ class DispatcheViewProvider implements TreeDataProvider<DispatcheItem | Dispatch
 
 	}
 
+	async cleanData(session: DebugSession) {
+		this.dispatchesList = [];
+		this.emitterDidChangeTreeData.fire(undefined);
+	}
 
 }
 
 class DispatcheItem extends TreeItem {
 	constructor(
-		public dispatche: DispatcheContents
+		public dispatche: DispatchContents,
+		public highlight: boolean = false
 	) {
-		super(dispatche.id, TreeItemCollapsibleState.Collapsed);
+		super(
+			{
+				label : dispatche.id,
+				highlights: (highlight ? [[0, dispatche.id.length]] : [])
+			 },
+			 highlight ? TreeItemCollapsibleState.Expanded : TreeItemCollapsibleState.Collapsed
+		);
 
 		this.tooltip = dispatche['target-id'];
 		this.description = dispatche.workgroup;

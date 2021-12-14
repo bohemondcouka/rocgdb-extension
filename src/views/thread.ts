@@ -1,19 +1,11 @@
 /* eslint-disable @typescript-eslint/naming-convention */
+import { ThreadGDBResponse, ThreadContents } from 'cdt-gdb-adapter/dist/mi/info';
 import { ExtensionContext, window, TreeDataProvider, Event, EventEmitter, DebugSession, 
 	TreeItem, TreeItemCollapsibleState } from 'vscode';
 import { Observer } from '../eventStoppedListener';
-import { FrameTreeType, FrameContents, FrameItem } from './frame';
+import { FrameTreeType, FrameItem } from './frame';
 
 
-
-export interface ThreadContents {
-    id: string;
-    'target-id': string;
-    name: string;
-    frame: FrameContents;
-    state: string;
-    core: string; // optional
-}
 
 export class ThreadView {
 	public threads: ThreadViewProvider;
@@ -61,10 +53,9 @@ class ThreadViewProvider implements TreeDataProvider<Content>, Observer {
 		console.debug('Get Thread Data');
 		try {
 			
-			const result = await session.customRequest('cdt-gdb-adapter/Threads') as ThreadContents[];
+			const result = await session.customRequest('cdt-gdb-adapter/Info/Threads') as ThreadGDBResponse;
 			if(result) {
-				this.threadsList = result.map((data) => new ThreadItem(data));
-				console.dir(this.threadsList);
+				this.threadsList = result.threads.map((data) => new ThreadItem(data, data.id === result['current-thread-id']));
 				this.emitterDidChangeTreeData.fire(undefined);
 				
 			}
@@ -75,17 +66,29 @@ class ThreadViewProvider implements TreeDataProvider<Content>, Observer {
 
 	}
 
+	async cleanData(session: DebugSession) {
+		this.threadsList = [];
+		this.emitterDidChangeTreeData.fire(undefined);
+	}
+
 
 }
 
 class ThreadItem extends TreeItem {
 	constructor(
-		public thread: ThreadContents
+		public thread: ThreadContents,
+		public highlight: boolean = false
 	) {
-		super(thread['target-id'], TreeItemCollapsibleState.Collapsed);
+		super(
+			{
+				label: thread['target-id'],
+				highlights: (highlight ? [[0,thread['target-id'].length]] : [])
+			},
+			highlight ? TreeItemCollapsibleState.Expanded : TreeItemCollapsibleState.Collapsed
+		);
 
 		this.tooltip = thread.name;
-		this.description = thread.core;
+		this.description = thread.id;
 		this.contextValue = thread.state;
 
 

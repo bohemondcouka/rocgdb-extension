@@ -1,17 +1,8 @@
 
+import { AgentGDBResponse, AgentContents } from 'cdt-gdb-adapter/dist/mi/info';
 import { ExtensionContext, window, TreeDataProvider, Event, EventEmitter, DebugSession, 
 	TreeItem, TreeItemCollapsibleState } from 'vscode';
 import { Observer } from '../eventStoppedListener';
-
-export interface AgentContents {
-    id: string;
-    'target-id': string;
-    name: string;
-    cores: string,
-    threads: string;
-    // eslint-disable-next-line @typescript-eslint/naming-convention
-    'location_id' : string;
-}
 
 export class AgentView {
 	public agents: AgentViewProvider;
@@ -58,10 +49,9 @@ class AgentViewProvider implements TreeDataProvider<AgentItem | AgentInfo>, Obse
 		console.debug('Get Agent Data');
 		try {
 			
-			const result = await session.customRequest('cdt-gdb-adapter/Agents') as AgentContents[];
+			const result = await session.customRequest('cdt-gdb-adapter/Info/Agents') as AgentGDBResponse;
 			if(result) {
-				this.agentsList = result.map((data) => new AgentItem(data));
-				console.dir(this.agentsList);
+				this.agentsList = result.agents.filter(data => data.id !== undefined).map((data) => new AgentItem(data, data.id === result['current-agent-id']));
 				this.emitterDidChangeTreeData.fire(undefined);
 				
 			}
@@ -72,14 +62,26 @@ class AgentViewProvider implements TreeDataProvider<AgentItem | AgentInfo>, Obse
 
 	}
 
+	async cleanData(session: DebugSession) {
+		console.debug('cleanData');
+		this.agentsList = [];
+		this.emitterDidChangeTreeData.fire(undefined);
+	}
 
 }
 
 class AgentItem extends TreeItem {
 	constructor(
-		public agent: AgentContents
+		public agent: AgentContents,
+		public highlight: boolean = false
 	) {
-		super(agent['target-id'], TreeItemCollapsibleState.Collapsed);
+		super(
+			{
+				label: agent['target-id'],
+				highlights: (highlight ? [[0, agent['target-id'].length]] : [])
+			},
+			highlight ? TreeItemCollapsibleState.Expanded : TreeItemCollapsibleState.Collapsed
+		);
 
 		this.tooltip = agent.name;
 		this.description = agent.id;

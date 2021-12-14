@@ -1,18 +1,10 @@
 /* eslint-disable @typescript-eslint/naming-convention */
+import { LaneGDBResponse, LaneContents } from 'cdt-gdb-adapter/dist/mi/info';
 import { ExtensionContext, window, TreeDataProvider, Event, EventEmitter, DebugSession, 
 	TreeItem, TreeItemCollapsibleState } from 'vscode';
 import { Observer } from '../eventStoppedListener';
-import { FrameContents, FrameItem, FrameTreeType } from './frame';
+import { FrameItem, FrameTreeType } from './frame';
 
-
-export interface LaneContents {
-    id: string;
-    gid: string;
-    thread: string;
-    Active: string;
-    'target-id': string;
-    frame: FrameContents;
-}
 
 export class LaneView {
 	public lanes: LaneViewProvider;
@@ -61,10 +53,9 @@ class LaneViewProvider implements TreeDataProvider<Content>, Observer {
 		console.debug('Get Lane Data');
 		try {
 			
-			const result = await session.customRequest('cdt-gdb-adapter/Lanes') as LaneContents[];
+			const result = await session.customRequest('cdt-gdb-adapter/Info/Lanes') as LaneGDBResponse;
 			if(result) {
-				this.lanesList = result.map((data) => new LaneItem(data));
-				console.dir(this.lanesList);
+				this.lanesList = result.lanes.filter(data => data.id !== undefined).map((data) => new LaneItem(data, data.id === result['current-lane-id']));
 				this.emitterDidChangeTreeData.fire(undefined);
 				
 			}
@@ -75,14 +66,25 @@ class LaneViewProvider implements TreeDataProvider<Content>, Observer {
 
 	}
 
+	async cleanData(session: DebugSession) {
+		this.lanesList = [];
+		this.emitterDidChangeTreeData.fire(undefined);
+	}
 
 }
 
 class LaneItem extends TreeItem {
 	constructor(
-		public lane: LaneContents
+		public lane: LaneContents,
+		public highlight: boolean = false
 	) {
-		super(lane.gid, TreeItemCollapsibleState.Collapsed);
+		super(
+			{
+				label: lane.gid,
+				highlights: (highlight ? [[0, lane.gid.length]] : [])
+			},
+			highlight ? TreeItemCollapsibleState.Expanded : TreeItemCollapsibleState.Collapsed
+		);
 
 		this.tooltip = lane.id;
 		this.description = lane.Active;

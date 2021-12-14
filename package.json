@@ -7,7 +7,7 @@
     "vscode": "^1.63.0"
   },
   "categories": [
-    "Other"
+    "Debuggers"
   ],
   "activationEvents": [
     "onDebug",
@@ -24,6 +24,16 @@
     "lint": "eslint src --ext ts",
     "test": "node ./out/test/runTest.js"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bohemondcouka/rocgdb-extension.git"
+  },
+  "author": "Bohémond Couka <bohemond.couka@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/bohemondcouka/rocgdb-extension/issues"
+  },
+  "homepage": "https://github.com/bohemondcouka/rocgdb-extension#readme",
   "devDependencies": {
     "@types/glob": "^7.1.4",
     "@types/mocha": "^9.0.0",

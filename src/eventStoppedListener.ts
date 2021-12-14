@@ -2,6 +2,7 @@ import { DebugAdapterTracker, Event, DebugSession, EventEmitter, DebugAdapterTra
 
 export interface Observer {
 	getData(session: DebugSession): void;
+	cleanData(session: DebugSession): void;
 }
 
 export class EventStoppedListenerFactory implements DebugAdapterTrackerFactory {
@@ -13,7 +14,10 @@ export class EventStoppedListenerFactory implements DebugAdapterTrackerFactory {
 
 	createDebugAdapterTracker(session: DebugSession): DebugAdapterTracker {
 		const listener =  new EventStoppedListener(session);
-		this.observers.forEach(observer => listener.onStopped(session => observer.getData(session)));
+		this.observers.forEach(observer => {
+			listener.onStopped(session => observer.getData(session));
+			listener.onExited((session) => observer.cleanData(session));
+		});
 		return listener;
 	}
 	
@@ -22,10 +26,14 @@ export class EventStoppedListenerFactory implements DebugAdapterTrackerFactory {
 export class EventStoppedListener implements DebugAdapterTracker {
 	public onStopped: Event<DebugSession>;
 	private emitterStopped: EventEmitter<DebugSession>;
+	public onExited: Event<DebugSession>;
+	private emitterExited: EventEmitter<DebugSession>;
 
 	constructor(public readonly session: DebugSession){
 		this.emitterStopped = new EventEmitter();
 		this.onStopped = this.emitterStopped.event;
+		this.emitterExited = new EventEmitter();
+		this.onExited = this.emitterExited.event;
 	}
 	/**
 	 * A session with the debug adapter is about to be started.
@@ -61,6 +69,7 @@ export class EventStoppedListener implements DebugAdapterTracker {
 	 * The debug adapter has exited with the given exit code or signal.
 	 */
 	onExit(code: number | undefined, signal: string | undefined): void {
+		this.emitterStopped.fire(this.session);
 		console.debug(`Debug session end : code (${code}), signal (${signal})`);
 	}
 }
